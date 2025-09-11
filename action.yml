@@ -93,8 +93,13 @@ runs:
     - name: Ensure labels exist
       shell: bash
       run: |
-        IFS=',' read -ra labels <<< "created-by:ci,${{ inputs.labels }}"
-        for lbl in "${labels[@]}"; do
+        IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
+        declare -A seen_labels
+        for lbl in "${raw_labels[@]}"; do
+          seen_labels["$lbl"]=1
+        done
+
+        for lbl in "${!seen_labels[@]}"; do
           exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i "^$lbl")
           if [[ -z "$exists" ]]; then
             echo "➕ Creating missing label: $lbl"
@@ -117,7 +122,6 @@ runs:
 
         cmd=(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$title" --body "$body")
 
-        # Always include created-by:ci label
         cmd+=("--label" "created-by:ci")
 
         if [[ -n "${{ inputs.labels }}" ]]; then
