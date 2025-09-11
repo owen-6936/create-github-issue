@@ -87,12 +87,19 @@ runs:
           echo "issue-number<<EOF" >> "$GITHUB_OUTPUT"
           echo "$issue_number" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "IS_DUPLICATE=true" >> "$GITHUB_ENV"
           exit 0
         fi
 
     - name: Ensure labels exist
       shell: bash
       run: |
+        if [[ "$IS_DUPLICATE" == "true" ]]; then
+          echo "🛑 Skipping label creation — duplicate issue already exists"
+          exit 0
+        fi
+
         IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
         declare -A seen_labels
         for lbl in "${raw_labels[@]}"; do
@@ -113,6 +120,11 @@ runs:
       id: create-issue
       shell: bash
       run: |
+        if [[ "$IS_DUPLICATE" == "true" ]]; then
+          echo "🛑 Skipping issue creation — duplicate already handled"
+          exit 0
+        fi
+
         title="${{ inputs.title }}"
         body="${{ inputs.body }}"
         [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
