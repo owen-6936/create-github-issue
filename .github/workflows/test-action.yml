@@ -1,0 +1,69 @@
+name: Automated Tests for Create Issue Action
+
+on:
+  push:
+    branches:
+      - ci/test-issue-action
+
+jobs:
+  test-create-issue:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        case:
+          - name: "Fresh Issue"
+            title: "Test: Fresh Issue"
+            body: "This is a new issue for testing."
+            labels: "automation,test"
+            assignees: "${{ github.actor }}"
+
+          - name: "Duplicate Detection"
+            title: "Test: Fresh Issue"
+            body: "Should trigger duplicate detection."
+            labels: "duplicate-check"
+            assignees: ""
+
+          - name: "Fallback Title & Body"
+            title: ""
+            body: ""
+            labels: ""
+            assignees: ""
+
+    name: ${{ matrix.case.name }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run Create Issue Action
+        id: create
+        uses: ./ # Assumes action is in root
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          title: ${{ matrix.case.title }}
+          body: ${{ matrix.case.body }}
+          labels: "created-by:ci,${{ matrix.case.labels }}"
+          assignees: ${{ matrix.case.assignees }}
+          fallback_title: "Fallback Title Used"
+          fallback_body: "Fallback body used for empty input."
+
+      - name: Log outputs
+        run: |
+          echo "🔗 Issue URL: ${{ steps.create.outputs.issue-url }}"
+          echo "🔢 Issue Number: ${{ steps.create.outputs.issue-number }}"
+
+  cleanup-issues:
+    runs-on: ubuntu-latest
+    needs: test-create-issue
+    steps:
+      - name: Close CI-created test issues
+        shell: bash
+        run: |
+          echo "🧹 Cleaning up issues labeled 'created-by:ci'..."
+
+          issues=$(gh issue list --repo "${GITHUB_REPOSITORY}" --label "created-by:ci" --state open --json number | jq -r '.[].number')
+
+          for issue in $issues; do
+            echo "🛑 Closing issue #$issue"
+            gh issue close "$issue" --repo "${GITHUB_REPOSITORY}" --comment "Closed automatically after CI test run."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

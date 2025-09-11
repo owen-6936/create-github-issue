@@ -1,0 +1,120 @@
+name: Create Issue
+description: Creates GitHub issues with custom title, body, labels, and assignees — avoids duplicates.
+author: owen-6936
+
+branding:
+  icon: alert-circle
+  color: yellow
+
+inputs:
+  github-token:
+    description: Token to authenticate the GitHub CLI
+    required: true
+
+  title:
+    description: Title of the issue to create
+    required: false
+    default: ""
+
+  body:
+    description: Body content of the issue
+    required: false
+    default: ""
+
+  labels:
+    description: Comma-separated list of labels to apply
+    required: false
+    default: ""
+
+  assignees:
+    description: Comma-separated list of usernames to assign
+    required: false
+    default: ""
+
+  fallback_title:
+    description: Title to use if no title is provided
+    required: false
+    default: Automated Issue
+
+  fallback_body:
+    description: Body to use if no body is provided
+    required: false
+    default: No issue body was provided by the workflow.
+
+outputs:
+  issue-url:
+    description: URL of the created or existing issue
+    value: ${{ steps.create-issue.outputs.issue_url }}
+  issue-number:
+    description: Number of the created or existing issue
+    value: ${{ steps.create-issue.outputs.issue_number }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install GitHub CLI
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gh jq
+
+    - name: Authenticate GitHub CLI
+      shell: bash
+      run: |
+        echo "${{ inputs.github-token }}" | gh auth login --with-token
+
+    - name: Check for Duplicate Issue
+      id: check-duplicate
+      shell: bash
+      run: |
+        title="${{ inputs.title }}"
+        [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
+
+        echo "🔍 Checking for existing open issues with title: $title"
+
+        existing=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --json title,number,url | jq -r \
+          --arg t "$title" '.[] | select(.title == $t) | [.number, .url] | @tsv')
+
+        if [[ -n "$existing" ]]; then
+          issue_number=$(echo "$existing" | cut -f1)
+          issue_url=$(echo "$existing" | cut -f2)
+          echo "⚠️ Duplicate found: #$issue_number"
+          echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
+          echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+    - name: Create Issue
+      id: create-issue
+      shell: bash
+      run: |
+        title="${{ inputs.title }}"
+        body="${{ inputs.body }}"
+        [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
+        [[ -z "$body" ]]  && body="${{ inputs.fallback_body }}"
+
+        cmd=(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$title" --body "$body")
+
+        if [[ -n "${{ inputs.labels }}" ]]; then
+          IFS=',' read -ra labels <<< "${{ inputs.labels }}"
+          for lbl in "${labels[@]}"; do
+            cmd+=("--label" "$lbl")
+          done
+        fi
+
+        if [[ -n "${{ inputs.assignees }}" ]]; then
+          IFS=',' read -ra assignees <<< "${{ inputs.assignees }}"
+          for asn in "${assignees[@]}"; do
+            cmd+=("--assignee" "$asn")
+          done
+        fi
+
+        echo "🚀 Creating new issue: $title"
+        response=$("${cmd[@]}" --json number,url)
+
+        issue_url=$(echo "$response" | jq -r .url)
+        issue_number=$(echo "$response" | jq -r .number)
+
+        echo "✅ Created issue #$issue_number"
+        echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
+        echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
