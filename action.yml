@@ -79,21 +79,62 @@ runs:
           issue_number=$(echo "$existing" | cut -f1)
           issue_url=$(echo "$existing" | cut -f2)
           echo "⚠️ Duplicate found: #$issue_number"
-          echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
-          echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
+
+          echo "issue-url<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$issue_url" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "issue-number<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$issue_number" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "IS_DUPLICATE=true" >> "$GITHUB_ENV"
           exit 0
         fi
+
+    - name: Ensure labels exist
+      shell: bash
+      run: |
+        if [[ "$IS_DUPLICATE" == "true" ]]; then
+          echo "🛑 Skipping label creation — duplicate issue already exists"
+          exit 0
+        fi
+
+        IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
+        declare -A seen_labels
+        for lbl in "${raw_labels[@]}"; do
+          seen_labels["$lbl"]=1
+        done
+
+        for lbl in "${!seen_labels[@]}"; do
+          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i "^$lbl")
+          if [[ -z "$exists" ]]; then
+            echo "➕ Creating missing label: $lbl"
+            gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI"
+          else
+            echo "✅ Label exists: $lbl"
+          fi
+        done
 
     - name: Create Issue
       id: create-issue
       shell: bash
       run: |
+        if [[ "$IS_DUPLICATE" == "true" ]]; then
+          echo "🛑 Skipping issue creation — duplicate already handled"
+          exit 0
+        fi
+
         title="${{ inputs.title }}"
         body="${{ inputs.body }}"
         [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
         [[ -z "$body" ]]  && body="${{ inputs.fallback_body }}"
 
+        echo "🚀 Creating new issue: $title"
+
         cmd=(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$title" --body "$body")
+
+        cmd+=("--label" "created-by:ci")
 
         if [[ -n "${{ inputs.labels }}" ]]; then
           IFS=',' read -ra labels <<< "${{ inputs.labels }}"
@@ -109,12 +150,21 @@ runs:
           done
         fi
 
-        echo "🚀 Creating new issue: $title"
-        response=$("${cmd[@]}" --json number,url)
+        issue_output=$("${cmd[@]}")
+        issue_url=$(echo "$issue_output" | grep -Eo 'https://github.com/[^ ]+/issues/[0-9]+')
+        issue_number=$(echo "$issue_url" | grep -Eo '[0-9]+$')
 
-        issue_url=$(echo "$response" | jq -r .url)
-        issue_number=$(echo "$response" | jq -r .number)
+        if [[ -z "$issue_url" ]]; then
+          echo "❌ Failed to create issue or extract URL"
+          exit 1
+        fi
 
         echo "✅ Created issue #$issue_number"
-        echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
-        echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
+
+        echo "issue-url<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$issue_url" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+        echo "issue-number<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$issue_number" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
