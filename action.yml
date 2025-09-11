@@ -79,7 +79,11 @@ runs:
           issue_number=$(echo "$existing" | cut -f1)
           issue_url=$(echo "$existing" | cut -f2)
           echo "⚠️ Duplicate found: #$issue_number"
-          echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
+
+          echo "issue-url<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$issue_url" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
           echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
           exit 0
         fi
@@ -114,7 +118,6 @@ runs:
           done
         fi
 
-        # Run command and capture printed URL
         issue_output=$("${cmd[@]}")
         issue_url=$(echo "$issue_output" | grep -Eo 'https://github.com/[^ ]+/issues/[0-9]+')
         issue_number=$(echo "$issue_url" | grep -Eo '[0-9]+$')
@@ -125,5 +128,9 @@ runs:
         fi
 
         echo "✅ Created issue #$issue_number"
-        echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
+
+        echo "issue-url<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$issue_url" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
         echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
