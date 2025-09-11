@@ -115,8 +115,14 @@ runs:
         fi
 
         # Run command and capture printed URL
-        issue_url=$("${cmd[@]}" | tee /dev/tty | grep -Eo 'https://github.com/[^ ]+/issues/[0-9]+')
+        issue_output=$("${cmd[@]}")
+        issue_url=$(echo "$issue_output" | grep -Eo 'https://github.com/[^ ]+/issues/[0-9]+')
         issue_number=$(echo "$issue_url" | grep -Eo '[0-9]+$')
+
+        if [[ -z "$issue_url" ]]; then
+          echo "❌ Failed to create issue or extract URL"
+          exit 1
+        fi
 
         echo "✅ Created issue #$issue_number"
         echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
