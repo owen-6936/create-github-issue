@@ -93,7 +93,12 @@ runs:
         [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
         [[ -z "$body" ]]  && body="${{ inputs.fallback_body }}"
 
+        echo "🚀 Creating new issue: $title"
+
         cmd=(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$title" --body "$body")
+
+        # Always include created-by:ci label
+        cmd+=("--label" "created-by:ci")
 
         if [[ -n "${{ inputs.labels }}" ]]; then
           IFS=',' read -ra labels <<< "${{ inputs.labels }}"
@@ -109,11 +114,9 @@ runs:
           done
         fi
 
-        echo "🚀 Creating new issue: $title"
-        response=$("${cmd[@]}" --json number,url)
-
-        issue_url=$(echo "$response" | jq -r .url)
-        issue_number=$(echo "$response" | jq -r .number)
+        # Run command and capture printed URL
+        issue_url=$("${cmd[@]}" | tee /dev/tty | grep -Eo 'https://github.com/[^ ]+/issues/[0-9]+')
+        issue_number=$(echo "$issue_url" | grep -Eo '[0-9]+$')
 
         echo "✅ Created issue #$issue_number"
         echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
