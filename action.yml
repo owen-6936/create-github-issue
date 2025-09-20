@@ -1,4 +1,4 @@
-name: Create Github Issue
+name: Create Github Issue Action
 description: Creates GitHub issues with custom title, body, labels, and assignees — avoids duplicates.
 author: owen-6936
 
