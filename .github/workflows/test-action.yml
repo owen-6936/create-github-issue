@@ -36,6 +36,13 @@ jobs:
             assignees: ""
             debug: true
 
+          - name: "Custom Labels & Assignees"
+            title: "Test: Custom Assignment"
+            body: "Verifying label creation and assignee propagation."
+            labels: "needs-review,agentic-flow"
+            assignees: "${{ github.actor }}"
+            debug: true
+
     name: ${{ matrix.case.name }}
     steps:
       - name: Checkout repo
