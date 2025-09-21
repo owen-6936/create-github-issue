@@ -125,7 +125,7 @@ runs:
           [[ -z "$lbl" ]] && continue
           lbl=$(echo "$lbl" | xargs)
           echo "🔍 Checking label: '$lbl'"
-          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name' | grep -i -F -x "$lbl")
+          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name' | grep -i -F -x "$lbl" || true)
           if [[ -z "$exists" ]]; then
             echo "➕ Creating label: '$lbl'"
             echo "🧪 Running: gh label create \"$lbl\" --repo \"${GITHUB_REPOSITORY}\""
