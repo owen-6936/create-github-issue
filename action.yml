@@ -99,7 +99,9 @@ runs:
       shell: bash
       if: ${{ env.IS_DUPLICATE == 'false' }}
       run: |
-        IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
+        labels="created-by:ci,${{ inputs.labels }}"
+        labels=$(echo "$labels" | sed 's/,,*/,/g' | sed 's/^,*//;s/,*$//')
+        IFS=',' read -ra raw_labels <<< "$labels"
         declare -A seen_labels
         for lbl in "${raw_labels[@]}"; do
           seen_labels["$lbl"]=1
