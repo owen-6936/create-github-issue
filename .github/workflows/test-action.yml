@@ -48,7 +48,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ matrix.case.title }}
           body: ${{ matrix.case.body }}
-          labels: "created-by:ci,${{ matrix.case.labels }}"
+          labels: "created-by-ci,${{ matrix.case.labels }}"
           assignees: ${{ matrix.case.assignees }}
           fallback_title: "Fallback Title Used"
           fallback_body: "Fallback body used for empty input."
@@ -65,9 +65,9 @@ jobs:
       - name: Close CI-created test issues
         shell: bash
         run: |
-          echo "🧹 Cleaning up issues labeled 'created-by:ci'... "
+          echo "🧹 Cleaning up issues labeled 'created-by-ci'... "
 
-          issues=$(gh issue list --repo "${GITHUB_REPOSITORY}" --label "created-by:ci" --state open --json number | jq -r '.[].number')
+          issues=$(gh issue list --repo "${GITHUB_REPOSITORY}" --label "created-by-ci" --state open --json number | jq -r '.[].number')
 
           for issue in $issues; do
             echo "🛑 Closing issue #$issue"
