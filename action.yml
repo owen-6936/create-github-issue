@@ -129,7 +129,9 @@ runs:
           if [[ -z "$exists" ]]; then
             echo "➕ Creating label: '$lbl'"
             echo "🧪 Running: gh label create \"$lbl\" --repo \"${GITHUB_REPOSITORY}\""
-            gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI" 2>&1 || echo "❌ Failed to create label: '$lbl'"
+            if ! (gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI"); then
+              echo "❌ Failed to create label: '$lbl'"
+            fi
           else
             echo "✅ Label exists: '$lbl'"
           fi
