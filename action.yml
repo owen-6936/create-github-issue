@@ -124,11 +124,10 @@ runs:
         echo "🔍 Full label list:"
         gh label list --repo "${GITHUB_REPOSITORY}" || echo "❌ Failed to list labels"
 
-
         for lbl in "${!seen_labels[@]}"; do
           [[ -z "$lbl" ]] && continue
           echo "🔍 Checking label: '$lbl'"
-          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i -F -x "$lbl")
+          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | cut -f1 | grep -i -F -x "$lbl")
           if [[ -z "$exists" ]]; then
             echo "➕ Creating label: '$lbl'"
             if ! gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed"      --description "Auto-created by CI"; then
