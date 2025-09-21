@@ -104,8 +104,8 @@ runs:
 
         lower=$(echo "$raw" | tr '[:upper:]' '[:lower:]')
 
-        if [[ "$lower" != *"created-by:ci"* ]]; then
-          labels="created-by:ci,$raw"
+        if [[ -n "$raw" && "$lower" != *"created-by-ci"* ]]; then
+          labels="created-by-ci,$raw"
         else
           labels="$raw"
         fi
