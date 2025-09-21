@@ -44,10 +44,10 @@ inputs:
 outputs:
   issue-url:
     description: URL of the created or existing issue
-    value: ${{ steps.create-issue.outputs.issue_url }}
+    value: ${{ steps.verify-issue.outputs.issue_url }}
   issue-number:
     description: Number of the created or existing issue
-    value: ${{ steps.create-issue.outputs.issue_number }}
+    value: ${{ steps.verify-issue.outputs.issue_number }}
 
 runs:
   using: composite
@@ -80,13 +80,8 @@ runs:
           issue_url=$(echo "$existing" | cut -f2)
           echo "⚠️ Duplicate found: #$issue_number"
 
-          echo "issue-url<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$issue_url" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-          echo "issue-number<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$issue_number" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
+          echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
 
           echo "IS_DUPLICATE=true" >> "$GITHUB_ENV"
           exit 0
@@ -178,10 +173,44 @@ runs:
 
         echo "✅ Created issue #$issue_number"
 
-        echo "issue-url<<EOF" >> "$GITHUB_OUTPUT"
-        echo "$issue_url" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        echo "issue-url=$issue_url" >> "$GITHUB_OUTPUT"
+        echo "issue-number=$issue_number" >> "$GITHUB_OUTPUT"
 
-        echo "issue-number<<EOF" >> "$GITHUB_OUTPUT"
-        echo "$issue_number" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+    - name: Verify Issue Outputs
+      id: verify-issue
+      shell: bash
+      run: |
+        if [[ "${{ env.IS_DUPLICATE }}" == "true" ]]; then
+          echo "🔁 Using existing issue from check-duplicate"
+          ISSUE_URL="${{ steps.check-duplicate.outputs.issue-url }}"
+          ISSUE_NUMBER="${{ steps.check-duplicate.outputs.issue-number }}"
+        else
+          echo "🆕 Using newly created issue from create-issue"
+          ISSUE_URL="${{ steps.create-issue.outputs.issue-url }}"
+          ISSUE_NUMBER="${{ steps.create-issue.outputs.issue-number }}"
+        fi
+
+        echo "✅ Finalizing issue outputs..."
+        echo "issue-url=$ISSUE_URL" >> "$GITHUB_OUTPUT"
+        echo "issue-number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+
+    - name: Final Output Check — Issue Resolution
+      if: always()
+      run: |
+        echo "🧠 Final diagnostic: validating issue outputs from create-issue step..."
+
+        ISSUE_URL="${{ steps.verify-issue.outputs.issue-url }}"
+        ISSUE_NUMBER="${{ steps.verify-issue.outputs.issue-number }}"
+
+        if [[ -z "$ISSUE_URL" || -z "$ISSUE_NUMBER" ]]; then
+          echo "❌ Mission failed: issue outputs are missing."
+          echo "🛑 Either the issue was not created or output propagation failed."
+          echo "📎 Expected outputs: issue-url and issue-number"
+          exit 1
+        else
+          echo "✅ Mission success: issue outputs verified."
+          echo "🔗 Issue URL: $ISSUE_URL"
+          echo "🔢 Issue Number: $ISSUE_NUMBER"
+          echo "📦 Outputs are clean, traceable, and ready for downstream use."
+        fi
+      shell: bash
