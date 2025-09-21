@@ -123,11 +123,8 @@ runs:
 
         for lbl in "${!seen_labels[@]}"; do
           [[ -z "$lbl" ]] && continue
+          lbl=$(echo "$lbl" | xargs)
           echo "🔍 Checking label: '$lbl'"
-          if ! gh label list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name'; then
-            echo "❌ Failed to list labels for repo: ${GITHUB_REPOSITORY}"
-            exit 1
-          fi
           exists=$(gh label list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name' | grep -i -F -x "$lbl")
           if [[ -z "$exists" ]]; then
             echo "➕ Creating label: '$lbl'"
