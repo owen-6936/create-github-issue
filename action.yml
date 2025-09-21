@@ -185,3 +185,24 @@ runs:
         echo "issue-number<<EOF" >> "$GITHUB_OUTPUT"
         echo "$issue_number" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
+
+    - name: Final Output Check — Issue Resolution
+      if: always()
+      run: |
+        echo "🧠 Final diagnostic: validating issue outputs from create-issue step..."
+
+        ISSUE_URL="${{ steps.create-issue.outputs.issue-url }}"
+        ISSUE_NUMBER="${{ steps.create-issue.outputs.issue-number }}"
+
+        if [[ -z "$ISSUE_URL" || -z "$ISSUE_NUMBER" ]]; then
+          echo "❌ Mission failed: issue outputs are missing."
+          echo "🛑 Either the issue was not created or output propagation failed."
+          echo "📎 Expected outputs: issue-url and issue-number"
+          exit 1
+        else
+          echo "✅ Mission success: issue outputs verified."
+          echo "🔗 Issue URL: $ISSUE_URL"
+          echo "🔢 Issue Number: $ISSUE_NUMBER"
+          echo "📦 Outputs are clean, traceable, and ready for downstream use."
+        fi
+      shell: bash
