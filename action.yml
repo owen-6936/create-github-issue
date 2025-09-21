@@ -106,6 +106,7 @@ runs:
         done
 
         for lbl in "${!seen_labels[@]}"; do
+          [[ -z "$lbl" ]] && continue
           exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i "^$lbl")
           if [[ -z "$exists" ]]; then
             echo "➕ Creating missing label: $lbl"
