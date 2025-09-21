@@ -121,12 +121,15 @@ runs:
 
         for lbl in "${!seen_labels[@]}"; do
           [[ -z "$lbl" ]] && continue
+          echo "🔍 Checking label: '$lbl'"
           exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i -F -x "$lbl")
           if [[ -z "$exists" ]]; then
-            echo "➕ Creating missing label: $lbl"
-            gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI"
+            echo "➕ Creating label: '$lbl'"
+            if ! gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed"      --description "Auto-created by CI"; then
+              echo "❌ Failed to create label: '$lbl'"
+            fi
           else
-            echo "✅ Label exists: $lbl"
+            echo "✅ Label exists: '$lbl'"
           fi
         done
 
@@ -144,7 +147,7 @@ runs:
 
         cmd=(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$title" --body "$body")
 
-        cmd+=("--label" "created-by:ci")
+        cmd+=("--label" "created-by-ci")
 
         if [[ -n "${{ inputs.labels }}" ]]; then
           IFS=',' read -ra labels <<< "${{ inputs.labels }}"
