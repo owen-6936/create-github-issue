@@ -104,8 +104,8 @@ runs:
 
         lower=$(echo "$raw" | tr '[:upper:]' '[:lower:]')
 
-        if [[ -n "$raw" && "$lower" != *"created-by-ci"* ]]; then
-          labels="created-by-ci,$raw"
+        if [[ -n "$raw" && "$lower" != *"created-by:ci"* ]]; then
+        labels="created-by:ci,$raw"
         else
           labels="$raw"
         fi
@@ -117,6 +117,7 @@ runs:
         done
 
         echo "deduplicated labels: ${!seen_labels[@]}"
+        echo "github repository: ${GITHUB_REPOSITORY}"
 
         for lbl in "${!seen_labels[@]}"; do
           [[ -z "$lbl" ]] && continue
