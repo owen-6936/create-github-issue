@@ -100,12 +100,12 @@ runs:
       if: ${{ env.IS_DUPLICATE == 'false' }}
       run: |
         raw="${{ inputs.labels }}"
-        raw=$(echo "$raw" | sed 's/:/-/g' | sed 's/,,*/,/g' | sed 's/^,*//;s/,*$//')
+        raw=$(echo "$raw" | sed 's/,,*/,/g' | sed 's/^,*//;s/,*$//')
 
         lower=$(echo "$raw" | tr '[:upper:]' '[:lower:]')
 
-        if [[ -n "$raw" && "$lower" != *"created-by-ci"* ]]; then
-        labels="created-by-ci,$raw"
+        if [[ -n "$raw" && "$lower" != *"created-by:ci"* ]]; then
+        labels="created-by:ci,$raw"
         else
           labels="$raw"
         fi
