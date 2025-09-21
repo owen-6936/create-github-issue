@@ -1,6 +1,12 @@
 # 🛠️ Create Issue Action
 
+[![CI Matrix](https://img.shields.io/github/actions/workflow/status/owen-6936/github-create-issue/ci/test-issue-action.yml?label=CI%20Matrix&logo=github)](https://github.com/owen-6936/github-create-issue/actions/workflows/ci/test-issue-action.yml)
+[![Version](https://img.shields.io/badge/version-v1.1.0-blue?logo=semver)](https://github.com/owen-6936/github-create-issue/releases)
+[![License](https://img.shields.io/github/license/owen-6936/github-create-issue?color=brightgreen)](LICENSE)
+
 Creates GitHub issues with custom title, body, labels, and assignees — with built-in duplicate detection, fallback handling, and CI-friendly cleanup.
+
+---
 
 ## ✨ Features
 
@@ -8,8 +14,9 @@ Creates GitHub issues with custom title, body, labels, and assignees — with bu
 - 🏷️ Auto-creates missing labels (including `created-by:ci`)
 - 👥 Supports multiple assignees
 - 📦 Fallback title/body if inputs are empty
-- 🔗 Outputs issue URL and number for downstream use
+- 🔗 Outputs issue URL and number for downstream use — even on duplicates
 - 🧹 Compatible with cleanup workflows via label filtering
+- 🧠 Modular output verification via `verify-issue` step
 
 ---
 
@@ -36,6 +43,25 @@ Creates GitHub issues with custom title, body, labels, and assignees — with bu
 
 ---
 
+## 🔐 Required Permissions
+
+To run this action successfully, your workflow must include:
+
+```yaml
+permissions:
+  issues: write
+  contents: write
+```
+
+### Why
+
+- `issues: write` — Required to create, update, and close issues.
+- `contents: write` — Needed for label creation and repository metadata access via `gh`.
+
+> These permissions must be set at the **job** or **workflow** level. Without them, the GitHub CLI will fail to authenticate or perform actions.
+
+---
+
 ## 🧾 Inputs
 
 | Name             | Required | Description                                      | Default                                  |
@@ -57,64 +83,50 @@ Creates GitHub issues with custom title, body, labels, and assignees — with bu
 | `issue-url`    | URL of the created or existing issue |
 | `issue-number` | Issue number                         |
 
+> Outputs are guaranteed via the `verify-issue` step, even when a duplicate is detected.
+
 ---
 
-## 🧪 Testing
+## 🧪 Matrix Testing
 
 Use this matrix-based test workflow to validate behavior:
 
 ```yaml
-name: Test Create Issue Action
+strategy:
+  matrix:
+    case:
+      - name: "Fresh Issue"
+        title: "Test: Fresh Issue"
+        body: "This is a new issue for testing."
+        labels: "automation,test"
+        assignees: "${{ github.actor }}"
 
-on:
-  push:
-    branches:
-      - ci/test-issue-action
+      - name: "Duplicate Detection"
+        title: "Test: Fresh Issue"
+        body: "Should trigger duplicate detection."
+        labels: "duplicate-check"
+        assignees: ""
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        case:
-          - name: "Fresh Issue"
-            title: "Test: Fresh Issue"
-            body: "This is a new issue for testing."
-            labels: "automation,test"
-            assignees: "${{ github.actor }}"
+      - name: "Fallback Handling"
+        title: ""
+        body: ""
+        labels: ""
+        assignees: ""
 
-          - name: "Duplicate Detection"
-            title: "Test: Fresh Issue"
-            body: "Should trigger duplicate detection."
-            labels: "duplicate-check"
-            assignees: ""
+      - name: "Label Bootstrap"
+        title: "Test: Label Creation"
+        body: "This issue should trigger fresh label creation."
+        labels: "bootstrap,ci-labels,new-start"
+        assignees: ""
 
-          - name: "Fallback Handling"
-            title: ""
-            body: ""
-            labels: ""
-            assignees: ""
-
-    name: ${{ matrix.case.name }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Create Issue Action
-        uses: ./
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          title: ${{ matrix.case.title }}
-          body: ${{ matrix.case.body }}
-          labels: "created-by:ci,${{ matrix.case.labels }}"
-          assignees: ${{ matrix.case.assignees }}
-          fallback_title: "Fallback Title Used"
-          fallback_body: "Fallback body used for empty input."
-
-      - name: Log outputs
-        run: |
-          echo "🔗 Issue URL: ${{ steps.create.outputs.issue-url }}"
-          echo "🔢 Issue Number: ${{ steps.create.outputs.issue-number }}"
+      - name: "Custom Labels & Assignees"
+        title: "Test: Custom Assignment"
+        body: "Verifying label creation and assignee propagation."
+        labels: "needs-review,agentic-flow"
+        assignees: "${{ github.actor }}"
 ```
+
+Each case validates a unique behavior: creation, duplication, fallback, label bootstrapping, and metadata propagation.
 
 ---
 
@@ -143,7 +155,9 @@ Automatically close CI-created issues after test runs:
 - Requires `gh` CLI and `jq` installed (auto-installed in action)
 - Labels are auto-created if missing
 - Duplicate detection is based on exact title match
-- Outputs are safely escaped using multiline syntax
+- Outputs are propagated via a dedicated `verify-issue` step
+- CI matrix validates all core behaviors
+- Action is modular, expressive, and reviewer-friendly
 
 ---
 
