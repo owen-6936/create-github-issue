@@ -58,7 +58,7 @@ jobs:
       - name: Close CI-created test issues
         shell: bash
         run: |
-          echo "🧹 Cleaning up issues labeled 'created-by:ci'..."
+          echo "🧹 Cleaning up issues labeled 'created-by:ci'... "
 
           issues=$(gh issue list --repo "${GITHUB_REPOSITORY}" --label "created-by:ci" --state open --json number | jq -r '.[].number')
 
