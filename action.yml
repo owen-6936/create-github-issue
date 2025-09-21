@@ -116,9 +116,11 @@ runs:
           seen_labels["$lbl"]=1
         done
 
+        echo "deduplicated labels: ${!seen_labels[@]}"
+
         for lbl in "${!seen_labels[@]}"; do
           [[ -z "$lbl" ]] && continue
-          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i "^$lbl")
+          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i -F -x "$lbl")
           if [[ -z "$exists" ]]; then
             echo "➕ Creating missing label: $lbl"
             gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI"
