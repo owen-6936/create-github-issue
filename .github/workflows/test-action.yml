@@ -45,7 +45,7 @@ jobs:
         id: create
         uses: ./ # Assumes action is in root
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PAT_TOKEN }}
           title: ${{ matrix.case.title }}
           body: ${{ matrix.case.body }}
           labels: "created-by-ci,${{ matrix.case.labels }}"
