@@ -92,9 +92,12 @@ runs:
           exit 0
         fi
 
+        echo "✅ No duplicate issue found, proceeding to create a new issue"
+        echo "IS_DUPLICATE=false" >> "$GITHUB_ENV"
+
     - name: Ensure labels exist
       shell: bash
-      if: ${{ env.IS_DUPLICATE }}
+      if: ${{ env.IS_DUPLICATE == 'false' }}
       run: |
         IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
         declare -A seen_labels
@@ -114,7 +117,7 @@ runs:
 
     - name: Create Issue
       id: create-issue
-      if: ${{ env.IS_DUPLICATE }}
+      if: ${{ env.IS_DUPLICATE == 'false' }}
       shell: bash
       run: |
         title="${{ inputs.title }}"
