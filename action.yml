@@ -94,12 +94,8 @@ runs:
 
     - name: Ensure labels exist
       shell: bash
+      if: ${{ env.IS_DUPLICATE }}
       run: |
-        if [[ "$IS_DUPLICATE" == "true" ]]; then
-          echo "🛑 Skipping label creation — duplicate issue already exists"
-          exit 0
-        fi
-
         IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
         declare -A seen_labels
         for lbl in "${raw_labels[@]}"; do
@@ -118,13 +114,9 @@ runs:
 
     - name: Create Issue
       id: create-issue
+      if: ${{ env.IS_DUPLICATE }}
       shell: bash
       run: |
-        if [[ "$IS_DUPLICATE" == "true" ]]; then
-          echo "🛑 Skipping issue creation — duplicate already handled"
-          exit 0
-        fi
-
         title="${{ inputs.title }}"
         body="${{ inputs.body }}"
         [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
