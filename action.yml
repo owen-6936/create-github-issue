@@ -118,6 +118,12 @@ runs:
 
         echo "deduplicated labels: ${!seen_labels[@]}"
         echo "github repository: ${GITHUB_REPOSITORY}"
+        echo "🔧 gh CLI version:"
+        gh --version
+
+        echo "🔍 Full label list:"
+        gh label list --repo "${GITHUB_REPOSITORY}" || echo "❌ Failed to list labels"
+
 
         for lbl in "${!seen_labels[@]}"; do
           [[ -z "$lbl" ]] && continue
