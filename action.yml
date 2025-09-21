@@ -92,39 +92,56 @@ runs:
           exit 0
         fi
 
+        echo "✅ No duplicate issue found, proceeding to create a new issue"
+        echo "IS_DUPLICATE=false" >> "$GITHUB_ENV"
+
     - name: Ensure labels exist
       shell: bash
+      if: ${{ env.IS_DUPLICATE == 'false' }}
       run: |
-        if [[ "$IS_DUPLICATE" == "true" ]]; then
-          echo "🛑 Skipping label creation — duplicate issue already exists"
-          exit 0
+        raw="${{ inputs.labels }}"
+        raw=$(echo "$raw" | sed 's/,,*/,/g' | sed 's/^,*//;s/,*$//')
+
+        lower=$(echo "$raw" | tr '[:upper:]' '[:lower:]')
+
+        if [[ -n "$raw" && "$lower" != *"created-by:ci"* ]]; then
+        labels="created-by:ci,$raw"
+        else
+          labels="$raw"
         fi
 
-        IFS=',' read -ra raw_labels <<< "created-by:ci,${{ inputs.labels }}"
+        IFS=',' read -ra raw_labels <<< "$labels"
         declare -A seen_labels
         for lbl in "${raw_labels[@]}"; do
           seen_labels["$lbl"]=1
         done
 
+        echo "deduplicated labels: ${!seen_labels[@]}"
+        echo "github repository: ${GITHUB_REPOSITORY}"
+        echo "🔧 gh CLI version:"
+        gh --version
+
         for lbl in "${!seen_labels[@]}"; do
-          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" | grep -i "^$lbl")
+          [[ -z "$lbl" ]] && continue
+          lbl=$(echo "$lbl" | xargs)
+          echo "🔍 Checking label: '$lbl'"
+          exists=$(gh label list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name' | grep -i -F -x "$lbl" || true)
           if [[ -z "$exists" ]]; then
-            echo "➕ Creating missing label: $lbl"
-            gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI"
+            echo "➕ Creating label: '$lbl'"
+            echo "🧪 Running: gh label create \"$lbl\" --repo \"${GITHUB_REPOSITORY}\""
+            if ! (gh label create "$lbl" --repo "${GITHUB_REPOSITORY}" --color "ededed" --description "Auto-created by CI"); then
+              echo "❌ Failed to create label: '$lbl'"
+            fi
           else
-            echo "✅ Label exists: $lbl"
+            echo "✅ Label exists: '$lbl'"
           fi
         done
 
     - name: Create Issue
       id: create-issue
+      if: ${{ env.IS_DUPLICATE == 'false' }}
       shell: bash
       run: |
-        if [[ "$IS_DUPLICATE" == "true" ]]; then
-          echo "🛑 Skipping issue creation — duplicate already handled"
-          exit 0
-        fi
-
         title="${{ inputs.title }}"
         body="${{ inputs.body }}"
         [[ -z "$title" ]] && title="${{ inputs.fallback_title }}"
