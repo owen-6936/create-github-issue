@@ -151,7 +151,7 @@ runs:
 
         cmd=(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$title" --body "$body")
 
-        cmd+=("--label" "created-by-ci")
+        cmd+=("--label" "created-by:ci")
 
         if [[ -n "${{ inputs.labels }}" ]]; then
           IFS=',' read -ra labels <<< "${{ inputs.labels }}"
