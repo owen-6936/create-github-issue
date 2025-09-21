@@ -99,8 +99,17 @@ runs:
       shell: bash
       if: ${{ env.IS_DUPLICATE == 'false' }}
       run: |
-        labels="created-by:ci,${{ inputs.labels }}"
-        labels=$(echo "$labels" | sed 's/,,*/,/g' | sed 's/^,*//;s/,*$//')
+        raw="${{ inputs.labels }}"
+        raw=$(echo "$raw" | sed 's/,,*/,/g' | sed 's/^,*//;s/,*$//')
+
+        lower=$(echo "$raw" | tr '[:upper:]' '[:lower:]')
+
+        if [[ "$lower" != *"created-by:ci"* ]]; then
+          labels="created-by:ci,$raw"
+        else
+          labels="$raw"
+        fi
+
         IFS=',' read -ra raw_labels <<< "$labels"
         declare -A seen_labels
         for lbl in "${raw_labels[@]}"; do
