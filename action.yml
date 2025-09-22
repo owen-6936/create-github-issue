@@ -44,10 +44,10 @@ inputs:
 outputs:
   issue-url:
     description: URL of the created or existing issue
-    value: ${{ steps.verify-issue.outputs.issue_url }}
+    value: ${{ steps.verify-issue.outputs.issue-url }}
   issue-number:
     description: Number of the created or existing issue
-    value: ${{ steps.verify-issue.outputs.issue_number }}
+    value: ${{ steps.verify-issue.outputs.issue-number }}
 
 runs:
   using: composite
