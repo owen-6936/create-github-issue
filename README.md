@@ -1,6 +1,6 @@
 # 🛠️ Create Issue Action
 
-[![CI Matrix](https://img.shields.io/github/actions/workflow/status/owen-6936/create-github-issue/ci/test-issue-action.yml?label=CI%20Matrix&logo=github)](https://github.com/owen-6936/create-github-issue/actions/workflows/ci/test-issue-action.yml)
+[![CI Matrix](https://img.shields.io/github/actions/workflow/status/owen-6936/create-github-issue/ci/test-action.yml?label=CI%20Matrix&logo=github)](https://github.com/owen-6936/create-github-issue/actions/workflows/ci/test-action.yml)
 [![Version](https://img.shields.io/badge/version-v1.1.0-blue?logo=semver)](https://github.com/owen-6936/create-github-issue/releases)
 [![License](https://img.shields.io/github/license/owen-6936/create-github-issue?color=brightgreen)](LICENSE)
 
